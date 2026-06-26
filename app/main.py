@@ -10,7 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .exception.unicorn import UnicornException
 from .routers import (
     body, cookie, database, dependency, enumeration, error, file, form, header, home, 
-    model, query, response, security, status
+    jsonlines, model, query, response, security, sse, status
 )
 
 @asynccontextmanager
@@ -39,10 +39,12 @@ app.include_router(error.router)
 app.include_router(file.router)
 app.include_router(form.router)
 app.include_router(header.router)
+app.include_router(jsonlines.router)
 app.include_router(model.router)
 app.include_router(query.router)
 app.include_router(response.router)
 app.include_router(security.router)
+app.include_router(sse.router)
 app.include_router(status.router)
 
 app.add_exception_handler(UnicornException, error.unicorn_exception_handler)
