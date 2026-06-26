@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 # from ..dependencies import get_token_header
 
 router = APIRouter(
-    prefix="",
+    prefix="/home",
     tags=[
         "home"
     ],
@@ -16,6 +16,6 @@ router = APIRouter(
     },
 )
 
-@router.get("/")
+@router.get("")
 def home():
     return {"Hello": "World"}

@@ -219,3 +219,6 @@ __marimo__/
 
 # Database
 database.db
+
+# Log file
+log.txt

@@ -1,16 +1,17 @@
-import time
-
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.exceptions import HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .exception.unicorn import UnicornException
+from .middleware.process_time import add_process_time_header
 from .routers import (
-    body, cookie, database, dependency, enumeration, error, file, form, header, home, 
-    jsonlines, model, query, response, security, sse, status
+    background_task, body, cookie, database, dependency, enumeration, error, file, frontend, form,  
+    header, home, json_lines, model, query, response, security, server_side_event, status
 )
 
 @asynccontextmanager
@@ -26,10 +27,48 @@ async def lifespan(app: FastAPI):
     # e.g., close_db_connection()
     pass
 
-app = FastAPI(lifespan=lifespan)
+description = """
+FastAPI demo API helps you do awesome stuff. 🚀
+
+## Items
+You can **read items**.
+
+## Users
+You will be able to:
+
+* **Create users**.
+* **Read users**.
+"""
+
+app = FastAPI(
+    title            = "FastAPI demo app",
+    description      = description,
+    summary          = "This app is for demo FastAPI features",
+    version          = "0.0.1",
+    terms_of_service = "https://www.apache.org/licenses/LICENSE-2.0.html",
+    contact          = {
+        "name":  "Dominic",
+        "url":   "https://github.com/dominicchinkh",
+        "email": "dominicchinkh@gmail.com",
+    },
+    license_info     = {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+    openapi_tags     = [
+        {
+            "name": "home",
+            "description": "Home is where the heart is",
+        },  
+    ],
+    lifespan=lifespan
+)
+
+#-------
+# Route
 
 app.include_router(home.router)
-
+app.include_router(background_task.router)
 app.include_router(body.router)
 app.include_router(cookie.router)
 app.include_router(database.router)
@@ -38,31 +77,26 @@ app.include_router(enumeration.router)
 app.include_router(error.router)
 app.include_router(file.router)
 app.include_router(form.router)
+app.include_router(frontend.router)
 app.include_router(header.router)
-app.include_router(jsonlines.router)
+app.include_router(json_lines.router)
 app.include_router(model.router)
 app.include_router(query.router)
 app.include_router(response.router)
 app.include_router(security.router)
-app.include_router(sse.router)
+app.include_router(server_side_event.router)
 app.include_router(status.router)
 
+#-------------------
+# Exception handler
+
 app.add_exception_handler(UnicornException, error.unicorn_exception_handler)
-app.add_exception_handler(StarletteHTTPException, error.http_exception_handler)
+app.add_exception_handler(HTTPException, error.http_exception_handler)
 
 #------------
 # Middleware
 
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    start_time = time.perf_counter()
-    response = await call_next(request)
-    process_time = time.perf_counter() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
-
-#------
-# CORS
+app.add_middleware(BaseHTTPMiddleware, add_process_time_header)
 
 origins = [
     "http://localhost.tiangolo.com",
@@ -78,3 +112,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+#-------------
+# Static file
+
+app.mount("/static", StaticFiles(directory="static"), name="static")

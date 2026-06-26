@@ -18,6 +18,8 @@ project/
     ├── internal/         # Admin or private routes
     │   ├── __init__.py
     │   └── admin.py
+    ├── middleware/       # Middleware
+    │   ├── __init__.py
     ├── models/           # Database ORM models (e.g., SQLAlchemy)
     │   ├── __init__.py
     │   ├── user.py
