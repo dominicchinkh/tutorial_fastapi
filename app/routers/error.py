@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 # from ..dependencies import get_token_header
-from ..exception.unicorn import UnicornException
+from ..exceptions.unicorn import UnicornException
 
 router = APIRouter(
     prefix="/error",

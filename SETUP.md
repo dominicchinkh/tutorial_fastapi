@@ -37,7 +37,7 @@ source .venv/bin/activate
 With the environment activated, install the libraries using pip:
 
 ```bash
-pip install "fastapi[standard]"
+pip install -r requirements.txt
 ```
 
 ## 🏃‍♂️ Run the Application
@@ -46,6 +46,14 @@ Once the dependencies are installed, you can run the server by running:
 
 ```bash
 fastapi dev
+```
+
+## 🏃‍♂️ Run the test
+
+Once the dependencies are installed, you can run the test by running:
+
+```bash
+pytest app/test
 ```
 
 ## Interactive API docs
