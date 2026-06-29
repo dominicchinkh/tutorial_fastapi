@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Response
 from pydantic import BaseModel
 from typing import Annotated
 
@@ -54,3 +54,10 @@ class CommonHeaders(BaseModel):
 @router.get("/items/model")
 async def read_header_items_with_model(headers: Annotated[CommonHeaders, Header()]):
     return headers
+
+# Response header
+
+@router.get("/")
+def get_headers(response: Response):
+    response.headers["X-Cat-Dog"] = "alone in the world"
+    return {"message": "Hello World"}

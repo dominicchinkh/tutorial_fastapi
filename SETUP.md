@@ -58,7 +58,8 @@ pytest app/test
 
 ## Interactive API docs
 
-Now go to http://127.0.0.1:8000/docs.
+Now go to http://127.0.0.1:8000/docs (http://127.0.0.1:8000/subapi/docs for subapi)
+
 
 You will see the automatic interactive API documentation (provided by [Swagger UI](https://github.com/swagger-api/swagger-ui)):
 

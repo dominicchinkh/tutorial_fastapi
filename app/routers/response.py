@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from typing import Any
 
 # from ..dependencies import get_token_header
 from ..models.item import CarItem, Item, PlaneItem
+from ..models.message import Message
 from ..models.user import UserIn, UserOut
 
 router = APIRouter(
@@ -24,6 +25,9 @@ router = APIRouter(
 #----------------
 # Response model
 
+# if you want the maximum performance, use a Response Model and don't declare 
+# a response_class in the path operation decorator
+
 @router.post("/items", response_model=Item)
 async def create_item_with_response_model(item: Item):
     return item
@@ -38,6 +42,33 @@ async def read_items_with_response_model():
 @router.post("/users", response_model=UserOut)
 async def create_user(user: UserIn) -> Any:
     return user
+
+@router.get(
+    "/users/{user_name}", 
+    response_model=UserOut,
+    responses={
+        404: {
+            "model": Message, 
+            "description": "The user was not found"
+        },
+        200: {
+            "description": "User requested by ID",
+            "content": {
+                "application/json": {
+                    "example": {"id": 1, "username": "bar"}
+                }
+            },
+        },
+    },
+)
+async def read_user(user_name: str) -> Any:
+    
+    if user_name == "roo":
+        raise HTTPException(
+            status_code=404, 
+            detail="Item not found"
+        )
+    return {"username": user_name, "email": user_name + "@example.com"}
 
 # Response class
 
@@ -89,3 +120,13 @@ async def read_union_item(item_id: str):
 async def read_dict():
     return {"foo": 2.3, "bar": 3.4}
 
+# Change status code
+
+tasks = {"foo": "Listen to the Bar Fighters"}
+
+@router.put("/tasks/{task_id}", status_code=200)
+def get_or_create_task(task_id: str, response: Response):
+    if task_id not in tasks:
+        tasks[task_id] = "This didn't exist before"
+        response.status_code = status.HTTP_201_CREATED
+    return tasks[task_id]

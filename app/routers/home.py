@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from ..config import get_settings, Settings
 # from ..dependencies import get_token_header
 
 router = APIRouter(
@@ -17,5 +20,5 @@ router = APIRouter(
 )
 
 @router.get("")
-def home():
+def home(settings: Annotated[Settings, Depends(get_settings)]):
     return {"Hello": "World"}

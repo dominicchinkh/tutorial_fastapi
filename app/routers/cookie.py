@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Cookie, Depends
+from fastapi import APIRouter, Cookie, Depends, Response
 from pydantic import BaseModel
 from typing import Annotated
 
@@ -36,3 +36,10 @@ class Cookies(BaseModel):
 @router.get("/item/model")
 async def read_cookie_item_with_model(cookies: Annotated[Cookies, Cookie()]):
     return cookies
+
+# Response Cookies
+
+@router.post("")
+def create_cookie(response: Response):
+    response.set_cookie(key="session", value="fake-cookie-session-value")
+    return {"message": "Come to the dark side, we have cookies"}

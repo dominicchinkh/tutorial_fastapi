@@ -1,12 +1,17 @@
 import jwt
+import secrets
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Security, status
+from fastapi.security import (
+    HTTPBasic, HTTPBasicCredentials,
+    OAuth2PasswordBearer, OAuth2PasswordRequestForm, SecurityScopes
+)
 
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
+from pydantic import ValidationError
 from typing import Annotated
 
 from ..crud.user import UserInDB
@@ -32,7 +37,13 @@ router = APIRouter(
 #----------
 # Security
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="token",
+    scopes={
+        "me": "Read information about the current user.",
+        "items": "Read items."
+    },
+)
 
 # To get a string like this run:
 # openssl rand -hex 32
@@ -63,9 +74,6 @@ fake_users_db = {
         "disabled": True,
     },
 }
-
-def fake_hash_password(password: str):
-    return "fake-hashed-" + password
 
 password_hash = PasswordHash.recommended()
 
@@ -114,8 +122,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     
     return encoded_jwt
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    
+async def get_current_user(
+    security_scopes: SecurityScopes, 
+    token: Annotated[str, Depends(oauth2_scheme)]
+):
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = "Bearer"
+        
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -129,15 +144,25 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         if username is None:
             raise credentials_exception
         
-        token_data = TokenData(username=username)
+        scope: str = payload.get("scope", "")
+        token_scopes = scope.split(" ")
         
-    except InvalidTokenError:
+        token_data = TokenData(scopes=token_scopes, username=username)
+        
+    except (InvalidTokenError, ValidationError):
         raise credentials_exception
     
     user = get_user(fake_users_db, username=token_data.username)
     if user is None:
         raise credentials_exception
     
+    for scope in security_scopes.scopes:
+        if scope not in token_data.scopes:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not enough permissions",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
     return user
 
 async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
@@ -151,7 +176,12 @@ async def read_current_user(current_user: Annotated[User, Depends(get_current_us
     return current_user
 
 @router.get("/users/me/active")
-async def read_current_active_user(current_user: Annotated[User, Depends(get_current_active_user)]):
+async def read_current_active_user(
+    current_user: Annotated[User, Security(get_current_user, scopes=["me"])],
+):
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    
     return current_user
 
 # The form
@@ -172,13 +202,60 @@ async def login_for_access_token(
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data = {
+            "sub": user.username, "scope": " ".join(form_data.scopes)
+        }, 
+        expires_delta=access_token_expires
     )
     
     return Token(access_token=access_token, token_type="bearer")
 
 @router.get("/users/me/items")
 async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Security(get_current_active_user, scopes=["items"])],
 ):
     return [{"item_id": "Foo", "owner": current_user.username}]
+
+@router.get("/status")
+async def read_system_status(current_user: Annotated[User, Depends(get_current_user)]):
+    return {"status": "ok"}
+
+# HTTP basic auth
+
+security = HTTPBasic()
+
+def get_current_username(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+):
+    # `secrets.compare_digest()` needs to take bytes or a str that only contains ASCII characters
+    # To handle that, we first convert the username and password to bytes encoding them with UTF-8.
+    
+    current_username_bytes = credentials.username.encode("utf8")
+    correct_username_bytes = b"stanley-johnson"
+    
+    # Use `secrets.compare_digest()` to secure against a type of attacks called `timing attacks`.
+    
+    # It will take the same time to compare `stanley-john` to `stanley-johnson` than it takes to 
+    # compare `john-doe` to `stanley-johnson`.
+    
+    is_correct_username = secrets.compare_digest(
+        current_username_bytes, correct_username_bytes
+    )
+    
+    current_password_bytes = credentials.password.encode("utf8")
+    correct_password_bytes = b"swordfish"
+    is_correct_password = secrets.compare_digest(
+        current_password_bytes, correct_password_bytes
+    )
+    
+    if not (is_correct_username and is_correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+@router.get("/basic-auth/users/me")
+def read_basic_auth_current_user(username: Annotated[str, Depends(get_current_username)]):
+    return {"username": username}

@@ -6,6 +6,7 @@ project/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py           # App initialization and FastAPI instance
+│   ├── subapi.py         # Sub application initialization and FastAPI instance
 │   ├── config.py         # Pydantic settings management
 │   ├── database.py       # SQLAlchemy/Tortoise connection & session setup
 │   ├── dependencies.py   # Global dependencies (e.g., current_user, get_db)
@@ -41,5 +42,6 @@ project/
 │           └── test_users.py
 ├── dist/
 │   └── index.html
-├── dist/
+├── static/
+│   ├── styles.css
 │   └── 1011.jpg

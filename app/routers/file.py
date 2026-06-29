@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi.responses import FileResponse
 from typing import Annotated
 
 # from ..dependencies import get_token_header
@@ -47,3 +48,11 @@ async def create_file_with_upload_file(file: UploadFile):
 @router.post("/multiple")
 async def create_multiple_files_upload_file(files: list[UploadFile]):
     return {"filenames": [file.filename for file in files]}
+
+# File response
+
+some_file_path = "large-video-file.mp4"
+
+@router.get("/")
+async def main():
+    return FileResponse(some_file_path)
