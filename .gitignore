@@ -221,3 +221,6 @@ database.db
 
 # Log file
 log.txt
+
+# SDK
+src/client

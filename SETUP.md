@@ -60,7 +60,6 @@ pytest app/test
 
 Now go to http://127.0.0.1:8000/docs (http://127.0.0.1:8000/subapi/docs for subapi)
 
-
 You will see the automatic interactive API documentation (provided by [Swagger UI](https://github.com/swagger-api/swagger-ui)):
 
 And now, go to http://127.0.0.1:8000/redoc.
@@ -77,4 +76,33 @@ When you are finished working on the project and want to return to your global s
 
 ```bash
 deactivate
+```
+
+## Generate SDK 
+
+You can use Hey API to generate a TypeScript client. The fastest way to do that is via npx.
+
+```bash
+npx @hey-api/openapi-ts -i http://localhost:8000/openapi.json -o src/client
+```
+
+The file `src/index.ts` shows how you can use the SDK. Execute the typescript by:
+
+```bash
+npm install -g tsx
+tsx src/index.ts
+```
+
+## Docker
+
+Build the docker image
+
+```bash
+docker build -t fastapi .
+```
+
+Start the Docker container
+
+```bash
+docker run -d --name fastapi -p 8000:80 fastapi
 ```
