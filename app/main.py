@@ -9,6 +9,7 @@ from starlette.exceptions import HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .exceptions.unicorn import UnicornException
+from .experiment import youtube_downloader
 from .middlewares.process_time import add_process_time_header
 from .models.subscription import Subscription
 from .routers import (
@@ -108,6 +109,7 @@ app.include_router(status.router)
 app.include_router(stream.router)
 app.include_router(template.router)
 app.include_router(websocket.router)
+app.include_router(youtube_downloader.router)
 
 #-------------------
 # Exception handler
